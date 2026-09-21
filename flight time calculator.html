@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EFB Flight Performance & Calculation Tool</title>
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: #131b2e;
+      --border-color: #1f2d4a;
+      --text-main: #e2e8f0;
+      --text-muted: #8492a6;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-orange: #f97316;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-blue);
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    input, select, textarea {
+      background-color: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent-blue);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+
+    .subtext {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .metric-value.cyan { color: var(--accent-cyan); }
+    .metric-value.green { color: var(--accent-green); }
+    .metric-value.yellow { color: var(--accent-yellow); }
+    .metric-value.orange { color: var(--accent-orange); }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .tag-flex { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+    .tag-toga { background: rgba(249, 115, 22, 0.2); color: var(--accent-orange); }
+
+    .section-header {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>✈️ EFB Flight Performance Tool</h1>
+      <span class="badge">v2.4 Ready</span>
+    </header>
+
+    <!-- INPUT PANEL -->
+    <div class="card">
+      <div class="card-title">Flight Configuration</div>
+      
+      <div class="form-group">
+        <label for="aircraft">Aircraft Type & Variant</label>
+        <select id="aircraft" onchange="calculate()">
+          <optgroup label="Narrowbody Airliners">
+            <option value="A319">Airbus A319-100 (A319)</option>
+            <option value="A320" selected>Airbus A320-200 (A320)</option>
+            <option value="A320N">Airbus A320neo (A320N)</option>
+            <option value="A321">Airbus A321-200 (A321)</option>
+            <option value="A321NX">Airbus A321neo (A321NX)</option>
+            <option value="B737">Boeing 737-700 (B737)</option>
+            <option value="B738">Boeing 737-800 (B738)</option>
+            <option value="B739">Boeing 737-900ER (B739)</option>
+
+            <option value="B38M">Boeing 737 MAX 8 (B38M)</option>
+            <option value="B752">Boeing 757-200 (B752)</option>
+          </optgroup>
+
+          <optgroup label="Widebody Airliners">
+            <option value="A332">Airbus A330-200 (A332)</option>
+            <option value="A333">Airbus A330-300 (A333)</option>
+            <option value="A339">Airbus A330-900neo (A339)</option>
+            <option value="A343">Airbus A340-300 (A343)</option>
+            <option value="A346">Airbus A340-600 (A346)</option>
+
+            <option value="A359">Airbus A350-900 (A359)</option>
+            <option value="A351">Airbus A350-1000 (A351)</option>
+            <option value="A388">Airbus A380-800 (A388)</option>
+            <option value="B763">Boeing 767-300ER (B763)</option>
+            <option value="B772">Boeing 777-200ER (B772)</option>
+            <option value="B77W">Boeing 777-300ER (B77W)</option>
+
+            <option value="B788">Boeing 787-8 (B788)</option>
+            <option value="B789">Boeing 787-9 (B789)</option>
+            <option value="B781">Boeing 787-10 (B781)</option>
+
+            <option value="B744">Boeing 747-400 (B744)</option>
+            <option value="B748">Boeing 747-8i (B748)</option>
+          </optgroup>
+
+          <optgroup label="Regional & Turboprops">
+            <option value="E190">Embraer E190 (E190)</option>
+            <option value="E195">Embraer E195-E2 (E195)</option>
+            <option value="CRJ9">Bombardier CRJ-900 (CRJ9)</option>
+            <option value="DH8D">De Havilland Dash 8-Q400 (DH8D)</option>
+            <option value="AT76">ATR 72-600 (AT76)</option>
+
+          </optgroup>
+
+          <optgroup label="General Aviation & Bizjets">
+            <option value="C172">Cessna 172 Skyhawk (C172)</option>
+            <option value="B58">Beechcraft Baron 58 (B58)</option>
+            <option value="C90">Beechcraft King Air C90B (C90)</option>
+            <option value="C750">Cessna Citation X (C750)</option>
+            <option value="GLF6">Gulfstream G650 (GLF6)</option>
+
+          </optgroup>
+
+          <optgroup label="Cargo & Freight Transports">
+            <option value="A306F">Airbus A300-600F (A306F)</option>
+            <option value="A321F">Airbus A321P2F (A321F)</option>
+            <option value="A332F">Airbus A330-200F (A332F)</option>
+            <option value="A33P2F">Airbus A330-300P2F (A33P2F)</option>
+            <option value="B733F">Boeing 737-300SF (B733F)</option>
+            <option value="B734F">Boeing 737-400SF (B734F)</option>
+            <option value="B738F">Boeing 737-800BCF (B738F)</option>
+            <option value="B752F">Boeing 757-200PCF (B752F)</option>
+            <option value="B762F">Boeing 767-200F (B762F)</option>
+            <option value="B763F">Boeing 767-300F (B763F)</option>
+            <option value="B77LF">Boeing 777F (B77LF)</option>
+            <option value="B778F">Boeing 777-8F (B778F)</option>
+            <option value="B744F">Boeing 747-400F / LCF (B744F)</option>
+            <option value="B748F">Boeing 747-8F (B748F)</option>
+            <option value="MD11F">McDonnell Douglas MD-11F (MD11F)</option>
+
+            <option value="DC10F">McDonnell Douglas DC-10-30F (DC10F)</option>
+
+            <option value="AN12">Antonov An-12 (AN12)</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="dep">Departure ICAO</label>
+          <input type="text" id="dep" value="MRPV" oninput="calculate()">
+        </div>
+        <div class="form-group">
+          <label for="arr">Arrival ICAO</label>
+          <input type="text" id="arr" value="KMIA" oninput="calculate()">
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="form-group">
+          <label for="alt">Cruise Altitude (FL)</label>
+          <input type="number" id="alt" value="350" step="10" oninput="calculate()">
+        </div>
+        <div class="form-group">
+          <label for="tow">Takeoff Weight (TOW - kg)</label>
+          <input type="number" id="tow" value="71000" step="500" oninput="calculate()">
+          <span class="subtext" id="mtow-hint">MTOW: 79,000 kg</span>
+        </div>
+        <div class="form-group">
+          <label for="ci">Cost Index (0–100)</label>
+          <input type="number" id="ci" value="30" min="0" max="100" oninput="calculate()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="route">Route Waypoints</label>
+        <textarea id="route" oninput="calculate()">DCT LIB M323 SAL DCT</textarea>
+      </div>
+    </div>
+
+    <!-- CALCULATED PERFORMANCE OUTPUTS -->
+    <div class="card">
+      <div class="card-title">
+        <span>Calculated Performance</span>
+        <span id="thrust-badge" class="tag tag-flex">FLEX THUST</span>
+      </div>
+
+      <div class="grid-4">
+        <div class="metric-card">
+          <label>Enroute Time (EET)</label>
+          <div class="metric-value cyan" id="eet-out">02h 15m</div>
+          <span class="subtext" id="dist-out">Distance: -- NM</span>
+        </div>
+        <div class="metric-card">
+          <label>Required Trip Fuel</label>
+          <div class="metric-value yellow" id="fuel-out">5,850 kg</div>
+          <span class="subtext">Auto-calculated</span>
+        </div>
+        <div class="metric-card">
+          <label>Estimated Landing Weight</label>
+          <div class="metric-value" id="lw-out">65,150 kg</div>
+          <span class="subtext" id="mlw-hint">MLW: 66,360 kg</span>
+        </div>
+        <div class="metric-card">
+          <label>Target Cruise Speed</label>
+          <div class="metric-value green" id="speed-out">M 0.78</div>
+          <span class="subtext" id="tas-out">TAS ~450 kts</span>
+        </div>
+      </div>
+
+      <!-- TAKEOFF V-SPEEDS -->
+      <div class="section-header">Takeoff Performance</div>
+      <div class="grid-3">
+        <div class="metric-card">
+          <label>V1 (Decision Speed)</label>
+          <div class="metric-value" id="v1-out">138 KTS</div>
+        </div>
+        <div class="metric-card">
+          <label>VR (Rotate Speed)</label>
+          <div class="metric-value green" id="vr-out">142 KTS</div>
+        </div>
+        <div class="metric-card">
+          <label>V2 (Safety Speed) / Mode</label>
+          <div class="metric-value orange" id="v2-out">148 KTS</div>
+          <span class="subtext" id="flex-out">Assumed Temp: FLEX +42°C</span>
+        </div>
+      </div>
+
+      <!-- LANDING PERFORMANCE -->
+      <div class="section-header">Landing Performance</div>
+      <div class="grid-3">
+        <div class="metric-card">
+          <label>VREF (Reference Speed)</label>
+          <div class="metric-value cyan" id="vref-out">132 KTS</div>
+        </div>
+        <div class="metric-card">
+          <label>VAPP (Approach Speed)</label>
+          <div class="metric-value green" id="vapp-out">137 KTS</div>
+          <span class="subtext">+5 kts wind margin included</span>
+        </div>
+        <div class="metric-card">
+          <label>Est. Landing Distance</label>
+          <div class="metric-value yellow" id="ldist-out">1,420 m</div>
+          <span class="subtext">Dry runway / Flaps FULL</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Aircraft Database Specs
+    const AIRCRAFT_DB = {
+      // Narrowbody
+      "A319": { name: "Airbus A319-100", tas: 447, ceiling: 39000, mtow: 75500, mlw: 62500, fuelBurn: 2400, flexCapable: true },
+      "A320": { name: "Airbus A320-200", tas: 450, ceiling: 39800, mtow: 77000, mlw: 66000, fuelBurn: 2500, flexCapable: true },
+      "A320N": { name: "Airbus A320neo", tas: 452, ceiling: 39800, mtow: 79000, mlw: 67400, fuelBurn: 2100, flexCapable: true },
+      "A321": { name: "Airbus A321-200", tas: 450, ceiling: 39800, mtow: 93500, mlw: 77800, fuelBurn: 2900, flexCapable: true },
+      "A321NX": { name: "Airbus A321neo", tas: 454, ceiling: 39800, mtow: 97000, mlw: 79200, fuelBurn: 2400, flexCapable: true },
+      "B737": { name: "Boeing 737-700", tas: 440, ceiling: 41000, mtow: 70080, mlw: 58600, fuelBurn: 2350, flexCapable: true },
+      "B738": { name: "Boeing 737-800", tas: 453, ceiling: 41000, mtow: 79000, mlw: 66360, fuelBurn: 2550, flexCapable: true },
+      "B739": { name: "Boeing 737-900ER", tas: 453, ceiling: 41000, mtow: 85130, mlw: 71350, fuelBurn: 2700, flexCapable: true },
+      "B38M": { name: "Boeing 737 MAX 8", tas: 455, ceiling: 41000, mtow: 82190, mlw: 69300, fuelBurn: 2150, flexCapable: true },
+      "B752": { name: "Boeing 757-200", tas: 461, ceiling: 42000, mtow: 115680, mlw: 95250, fuelBurn: 3800, flexCapable: true },
+
+      // Widebody
+      "A332": { name: "Airbus A330-200", tas: 470, ceiling: 41000, mtow: 242000, mlw: 182000, fuelBurn: 5600, flexCapable: true },
+      "A333": { name: "Airbus A330-300", tas: 470, ceiling: 41000, mtow: 242000, mlw: 187000, fuelBurn: 5800, flexCapable: true },
+      "A339": { name: "Airbus A330-900neo", tas: 475, ceiling: 41000, mtow: 251000, mlw: 191000, fuelBurn: 4900, flexCapable: true },
+      "A343": { name: "Airbus A340-300", tas: 470, ceiling: 41000, mtow: 276500, mlw: 192000, fuelBurn: 6500, flexCapable: true },
+      "A346": { name: "Airbus A340-600", tas: 482, ceiling: 41000, mtow: 380000, mlw: 265000, fuelBurn: 8200, flexCapable: true },
+      "A359": { name: "Airbus A350-900", tas: 488, ceiling: 43100, mtow: 280000, mlw: 207000, fuelBurn: 5800, flexCapable: true },
+      "A351": { name: "Airbus A350-1000", tas: 490, ceiling: 43100, mtow: 319000, mlw: 236000, fuelBurn: 6400, flexCapable: true },
+      "A388": { name: "Airbus A380-800", tas: 490, ceiling: 43000, mtow: 575000, mlw: 394000, fuelBurn: 12000, flexCapable: true },
+      "B763": { name: "Boeing 767-300ER", tas: 460, ceiling: 43000, mtow: 186880, mlw: 145150, fuelBurn: 4800, flexCapable: true },
+      "B772": { name: "Boeing 777-200ER", tas: 482, ceiling: 43100, mtow: 297550, mlw: 213180, fuelBurn: 6800, flexCapable: true },
+      "B77W": { name: "Boeing 777-300ER", tas: 490, ceiling: 43100, mtow: 351533, mlw: 251290, fuelBurn: 7800, flexCapable: true },
+      "B788": { name: "Boeing 787-8", tas: 487, ceiling: 43000, mtow: 227930, mlw: 172365, fuelBurn: 4900, flexCapable: true },
+      "B789": { name: "Boeing 787-9", tas: 488, ceiling: 43000, mtow: 254011, mlw: 192776, fuelBurn: 5400, flexCapable: true },
+      "B781": { name: "Boeing 787-10", tas: 488, ceiling: 41100, mtow: 254011, mlw: 201848, fuelBurn: 5700, flexCapable: true },
+      "B744": { name: "Boeing 747-400", tas: 493, ceiling: 45000, mtow: 396890, mlw: 295740, fuelBurn: 10200, flexCapable: true },
+      "B748": { name: "Boeing 747-8i", tas: 495, ceiling: 45000, mtow: 447696, mlw: 312071, fuelBurn: 10800, flexCapable: true },
+
+      // Regional
+      "E190": { name: "Embraer E190", tas: 447, ceiling: 41000, mtow: 51800, mlw: 44000, fuelBurn: 1850, flexCapable: true },
+      "E195": { name: "Embraer E195-E2", tas: 453, ceiling: 41000, mtow: 61500, mlw: 54000, fuelBurn: 1700, flexCapable: true },
+      "CRJ9": { name: "Bombardier CRJ-900", tas: 470, ceiling: 41000, mtow: 38330, mlw: 33340, fuelBurn: 1600, flexCapable: true },
+      "DH8D": { name: "Dash 8-Q400", tas: 360, ceiling: 27000, mtow: 29256, mlw: 28009, fuelBurn: 1100, flexCapable: false },
+      "AT76": { name: "ATR 72-600", tas: 275, ceiling: 25000, mtow: 23000, mlw: 22350, fuelBurn: 800, flexCapable: false },
+
+      // GA / Bizjets
+      "C172": { name: "Cessna 172 Skyhawk", tas: 122, ceiling: 14000, mtow: 1157, mlw: 1157, fuelBurn: 35, flexCapable: false },
+      "B58": { name: "Beechcraft Baron 58", tas: 200, ceiling: 20600, mtow: 2495, mlw: 2495, fuelBurn: 130, flexCapable: false },
+      "C90": { name: "King Air C90B", tas: 226, ceiling: 30000, mtow: 4581, mlw: 4354, fuelBurn: 300, flexCapable: false },
+      "C750": { name: "Cessna Citation X", tas: 525, ceiling: 51000, mtow: 16374, mlw: 14424, fuelBurn: 1150, flexCapable: true },
+      "GLF6": { name: "Gulfstream G650", tas: 516, ceiling: 51000, mtow: 45178, mlw: 37875, fuelBurn: 2100, flexCapable: true },
+
+      // Cargo
+      "A306F": { name: "Airbus A300-600F", tas: 450, ceiling: 40000, mtow: 170500, mlw: 140000, fuelBurn: 4800, flexCapable: true },
+      "A321F": { name: "Airbus A321P2F", tas: 460, ceiling: 39800, mtow: 93500, mlw: 79200, fuelBurn: 2750, flexCapable: true },
+      "A332F": { name: "Airbus A330-200F", tas: 470, ceiling: 41000, mtow: 233000, mlw: 182000, fuelBurn: 5500, flexCapable: true },
+      "A33P2F": { name: "Airbus A330-300P2F", tas: 470, ceiling: 41000, mtow: 242000, mlw: 187000, fuelBurn: 5700, flexCapable: true },
+      "B733F": { name: "Boeing 737-300SF", tas: 430, ceiling: 37000, mtow: 63270, mlw: 51700, fuelBurn: 2450, flexCapable: true },
+      "B734F": { name: "Boeing 737-400SF", tas: 435, ceiling: 37000, mtow: 68038, mlw: 56245, fuelBurn: 2550, flexCapable: true },
+      "B738F": { name: "Boeing 737-800BCF", tas: 453, ceiling: 41000, mtow: 79000, mlw: 66360, fuelBurn: 2600, flexCapable: true },
+      "B752F": { name: "Boeing 757-200PCF", tas: 461, ceiling: 42000, mtow: 115680, mlw: 95250, fuelBurn: 3850, flexCapable: true },
+      "B762F": { name: "Boeing 767-200F", tas: 459, ceiling: 43000, mtow: 179170, mlw: 136080, fuelBurn: 4550, flexCapable: true },
+      "B763F": { name: "Boeing 767-300F", tas: 460, ceiling: 43000, mtow: 186880, mlw: 145150, fuelBurn: 4850, flexCapable: true },
+      "B77LF": { name: "Boeing 777F", tas: 490, ceiling: 43100, mtow: 347815, mlw: 260815, fuelBurn: 7400, flexCapable: true },
+      "B778F": { name: "Boeing 777-8F", tas: 492, ceiling: 43100, mtow: 365100, mlw: 271000, fuelBurn: 7200, flexCapable: true },
+      "B744F": { name: "Boeing 747-400F", tas: 493, ceiling: 45000, mtow: 396890, mlw: 302090, fuelBurn: 10400, flexCapable: true },
+      "B748F": { name: "Boeing 747-8F", tas: 495, ceiling: 45000, mtow: 447696, mlw: 346091, fuelBurn: 11000, flexCapable: true },
+      "MD11F": { name: "McDonnell Douglas MD-11F", tas: 473, ceiling: 43000, mtow: 285990, mlw: 222900, fuelBurn: 7250, flexCapable: true },
+      "DC10F": { name: "McDonnell Douglas DC-10-30F", tas: 465, ceiling: 42000, mtow: 263000, mlw: 182000, fuelBurn: 7600, flexCapable: true },
+      "AN12": { name: "Antonov An-12", tas: 360, ceiling: 33000, mtow: 61000, mlw: 58000, fuelBurn: 2100, flexCapable: false }
+    };
+
+    // Known Airport Coordinates for Auto-Distance Estimation
+    const AIRPORTS = {
+      "MRPV": { lat: 9.957, lon: -84.139 },
+      "MROC": { lat: 9.993, lon: -84.208 },
+      "MPTO": { lat: 9.071, lon: -79.383 },
+      "KMIA": { lat: 25.795, lon: -80.287 },
+      "KJFK": { lat: 40.641, lon: -73.778 },
+      "EGLL": { lat: 51.470, lon: -0.454 },
+      "LFPG": { lat: 49.009, lon: 2.547 },
+      "KLAX": { lat: 33.942, lon: -118.408 }
+    };
+
+    function calculateDistance(depIcao, arrIcao, routeText) {
+      depIcao = depIcao.trim().toUpperCase();
+      arrIcao = arrIcao.trim().toUpperCase();
+
+      if (AIRPORTS[depIcao] && AIRPORTS[arrIcao]) {
+        const p1 = AIRPORTS[depIcao];
+        const p2 = AIRPORTS[arrIcao];
+        const R = 3440.065; // Radius of earth in NM
+        const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+        const dLon = (p2.lon - p1.lon) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        let directDist = R * c;
+
+        // Add waypoint route complexity factor (approx 8% route overhead)
+        if (routeText.length > 5) directDist *= 1.08;
+        return Math.round(directDist);
+      }
+      return 1050; // Default fallback distance if ICAOs aren't recognized
+    }
+
+    function calculate() {
+      const acKey = document.getElementById('aircraft').value;
+      const ac = AIRCRAFT_DB[acKey] || AIRCRAFT_DB["A320"];
+
+      const dep = document.getElementById('dep').value;
+      const arr = document.getElementById('arr').value;
+      const route = document.getElementById('route').value;
+      const tow = parseFloat(document.getElementById('tow').value) || ac.mtow * 0.9;
+      const ci = parseFloat(document.getElementById('ci').value) || 30;
+
+      // Update MTOW / MLW Labels
+      document.getElementById('mtow-hint').textContent = `MTOW: ${ac.mtow.toLocaleString()} kg`;
+      document.getElementById('mlw-hint').textContent = `MLW: ${ac.mlw.toLocaleString()} kg`;
+
+      // 1. Distance & Cruise Speed Calculations
+      const dist = calculateDistance(dep, arr, route);
+      const speedCostIndexAdj = (ci - 30) * 0.5;
+      const effectiveTAS = ac.tas + speedCostIndexAdj;
+      const mach = (effectiveTAS / 573).toFixed(2); // Approximate Mach conversion
+
+      // 2. Flight Time & Fuel Calculation
+      const groundSpeed = effectiveTAS - 10; // Auto background headwind factor
+      const hours = dist / groundSpeed;
+      const totalMinutes = Math.round(hours * 60) + 15; // +15 mins climb/descent overhead
+      const eetHours = Math.floor(totalMinutes / 60);
+      const eetMins = totalMinutes % 60;
+
+      const hourlyFuelBurn = ac.fuelBurn;
+      const tripFuel = Math.round((totalMinutes / 60) * hourlyFuelBurn);
+      const landingWeight = Math.round(tow - tripFuel);
+
+      // 3. Automated Thrust Rating & FLEX Temp Calculation
+      const towRatio = tow / ac.mtow;
+      let isTOGA = false;
+      let flexTemp = 0;
+
+      if (!ac.flexCapable || towRatio > 0.85) {
+        isTOGA = true;
+      } else {
+        // Lower weight allows higher assumed temperature (FLEX)
+        flexTemp = Math.round(60 - (towRatio * 35));
+      }
+
+      // Update Thrust Display
+      const thrustBadge = document.getElementById('thrust-badge');
+      const flexOut = document.getElementById('flex-out');
+      if (isTOGA) {
+        thrustBadge.className = "tag tag-toga";
+        thrustBadge.textContent = "TOGA THRUST";
+        flexOut.textContent = "Thrust Mode: TOGA (FULL)";
+      } else {
+        thrustBadge.className = "tag tag-flex";
+        thrustBadge.textContent = "FLEX THRUST";
+        flexOut.textContent = `Assumed Temp: FLEX +${flexTemp}°C`;
+      }
+
+      // 4. Takeoff V-Speed Logic
+      const weightRatio = tow / ac.mtow;
+      const baseV = 110 + (weightRatio * 35);
+      const thrustVAdj = isTOGA ? 0 : 2; // Slightly higher speeds for FLEX thrust
+
+      const v1 = Math.round(baseV + thrustVAdj);
+      const vr = Math.round(v1 + 5);
+      const v2 = Math.round(vr + 6);
+
+      // 5. Landing V-Speed & Distance Logic
+      const lwRatio = landingWeight / ac.mlw;
+      const vref = Math.round(115 + (lwRatio * 22));
+      const vapp = vref + 5;
+      const estLandingDist = Math.round(1100 + (lwRatio * 550));
+
+      // Render Outputs to UI
+      document.getElementById('eet-out').textContent = `${String(eetHours).padStart(2, '0')}h ${String(eetMins).padStart(2, '0')}m`;
+      document.getElementById('dist-out').textContent = `Distance: ${dist.toLocaleString()} NM`;
+      document.getElementById('fuel-out').textContent = `${tripFuel.toLocaleString()} kg`;
+      document.getElementById('lw-out').textContent = `${landingWeight.toLocaleString()} kg`;
+      document.getElementById('speed-out').textContent = `M ${mach}`;
+      document.getElementById('tas-out').textContent = `TAS ~${Math.round(effectiveTAS)} kts`;
+
+      document.getElementById('v1-out').textContent = `${v1} KTS`;
+      document.getElementById('vr-out').textContent = `${vr} KTS`;
+      document.getElementById('v2-out').textContent = `${v2} KTS`;
+
+      document.getElementById('vref-out').textContent = `${vref} KTS`;
+      document.getElementById('vapp-out').textContent = `${vapp} KTS`;
+      document.getElementById('ldist-out').textContent = `${estLandingDist.toLocaleString()} m`;
+    }
+
+    // Run initial calculation on page load
+    window.onload = calculate;
+  </script>
+</body>
+</html>
